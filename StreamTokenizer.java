@@ -34,9 +34,10 @@ import java.util.Arrays;
  * read one at a time. The parsing process is controlled by a syntax tree
  * and a number of flags that can be set to various states. The
  * stream tokenizer can recognize identifiers, numbers, quoted
- * strings, and various comment styles. A typical usecase is to
- * first create an instance of this class, then modify the
- * syntax tree (how the parser reacts to each character), and finally repeatedly loop calling the
+ * strings, and various comment styles. 
+ * <p>
+ * A <b>typical usecase</b> is to
+ * first create an instance of this class and repeatedly loop calling the
  * {@code nextToken} method in each iteration of the loop until
  * it returns the value {@code TT_EOF}.
  * <p>
@@ -50,98 +51,49 @@ import java.util.Arrays;
  * are ignored until the end of the line.
  * Quote characters wrap string literals, which are seen as a single token and whose value is stored in {@code sval}.
  * <p>
- * default, the {@code StreamTokenizer} class's syntax tree recognizes
+ * The <b>default syntax tree</b> recognized by the {@code StreamTokenizer} is:
  * <ul>
- *  <li> Word Characters as 'a-z' and 'A-Z' </li>
- *  <li> Numeric Characters as 0-9, "-", and "." </li>
- *  <li> Whitespace Characters as ASCII values from 0 to 32 </li>
- *  <li> Comment char as / </li>
+ *  <li> Word Characters as 'a-z' and 'A-Z' (combinations of these characters get parsed together as words) </li>
+ *  <li> Numeric Characters as 0-9, "-", and "." (combinations of these characters get parsed together as numbers) </li>
+ *  <li> Comment char as / (this has the parser ignore everything until the next newline) </li>
  *  <li> Single Quote chars as \' and "
  * </ul>
+ * Whitespace Characters as ASCII values from 0 to 32 (these serve to separate tokens).
  * </p>
  * <p>
- * If {@code st} is a {@code StreamTokenizer}, the default syntax tree is achieved by
- * <blockquote><pre>st.wordChars('a', 'z');
-        st.wordChars('A', 'Z');
-        st.wordChars(128 + 32, 255);
-        st.whitespaceChars(0, ' ');
-        st.commentChar('/');
-        st.quoteChar('"');
-        st.quoteChar('\'');
-        st.parseNumbers();
-        </pre></blockquote>
- * <p>
- * To get started, here is an example provided by https://www.tutorialspoint.com/java/io/streamtokenizer_pushback.htm
- * <blockquote><pre>import java.io.StreamTokenizer;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Reader;
-import java.io.BufferedReader;
-
-class Tokenize {
-    public static void main(String[] args) {
-        String text = "Hello. This is a text \n that will be split " 
-           + "into tokens. 1 + 1 = 2";
-           
-        try {
-           // create a new file with an ObjectOutputStream
-           FileOutputStream out = new FileOutputStream("test.txt");
-           ObjectOutputStream oout = new ObjectOutputStream(out);
-  
-           // write something in the file
-           oout.writeUTF(text);
-           oout.flush();
-  
-           // create an ObjectInputStream for the file we created before
-           ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test.txt"));
-  
-           // create a new tokenizer
-           Reader r = new BufferedReader(new InputStreamReader(ois));
-           StreamTokenizer st = new StreamTokenizer(r);
-  
-           // specify that numbers should be parsed
-           st.parseNumbers();
-  
-           // print the stream tokens
-           boolean eof = false;
-           
-           do {
-              int token = st.nextToken();
-  
-              switch (token) {
-                 case StreamTokenizer.TT_EOF:
-                    System.out.println("End of File encountered.");
-                    eof = true;
-                    break;
-                    
-                 case StreamTokenizer.TT_EOL:
-                    System.out.println("End of Line encountered.");
-                    break;
-                    
-                 case StreamTokenizer.TT_WORD:
-                    System.out.println("Word: " + st.sval);
-                    break;
-                    
-                 case StreamTokenizer.TT_NUMBER:
-                    System.out.println("Number: " + st.nval);
-                    break;
-                    
-                 default:
-                    System.out.println((char) token + " encountered.");
-                    
-                    if (token == '!') {
-                       eof = true;
-                    }
-              }
-  
-            } while (!eof);
-  
-        } catch (Exception ex) {
-           ex.printStackTrace();
-        }
+ * <b>To get started</b>, follow this example to get an understanding of the key ideas of Stream Tokenizer
+ * <blockquote><pre>
+      // create a new tokenizer
+      ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test.txt"));
+      Reader r = new BufferedReader(new InputStreamReader(ois));
+      StreamTokenizer st = new StreamTokenizer(r);
+         
+      // in here we will repeatedly call st.nextToken() until we hit the end of the file
+      do {
+         // call st.nextToken to parse the next token, 
+         st.nextToken();
+         // we  check the type of the token parsed with st.ttype (word, number, character, EOL, etc.)
+         switch(st.ttype) {
+            case StreamTokenizer.TT_EOL:
+               System.out.println("End of Line encountered.");
+               break;
+               
+            // if it is a word then st.ttype will be TT_WORD and st.sval will have the value of the word as a string
+            case StreamTokenizer.TT_WORD:
+               System.out.println("Word: " + st.sval);
+               break;
+               
+            // if it is a number then st.ttype will be TT_NUMBER as st.nval will have the value of the number as a double
+            case StreamTokenizer.TT_NUMBER:
+               System.out.println("Number: " + st.nval);
+               break;
+               
+            default:
+            // if an ordinary character is encountered, its value will be stored in the st.ttype field
+               System.out.println((char) st.ttype + " encountered.");
+         }
+         }
+      } while (st.ttype != TT_EOF);
     }
 }</pre></blockquote>
  * This is where we would put a state diagram, however we couldn't
@@ -379,7 +331,7 @@ public class StreamTokenizer {
      *      0 1 2 3 4 5 6 7 8 9 . -
      * </pre></blockquote>
      * <p>
-     * has the "numeric" attribute. This is its default state.
+     * has the "numeric" attribute. <b>Note:</b> These are parsed as numbers by default.
      * <p>
      * When the parser encounters a word token that has the format of a
      * double precision floating-point number, it treats the token as a
